@@ -22,8 +22,14 @@
         # system.
 
         # Equivalent to  inputs'.nixpkgs.legacyPackages.hello;
-        # packages.default = pkgs.hello;
+        packages.scanbook = pkgs.callPackage ./scripts/scanbook {};
+        packages.default = self'.packages.scanbook;
+
         devShells.default = pkgs.mkShell {
+          packages = [
+            self'.packages.scanbook
+
+          ];
         };
       };
       flake = {
