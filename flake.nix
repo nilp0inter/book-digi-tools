@@ -28,7 +28,8 @@
         devShells.default = pkgs.mkShell {
           packages = [
             self'.packages.scanbook
-
+            pkgs.scantailor-advanced
+            pkgs.img2pdf
           ];
         };
       };
