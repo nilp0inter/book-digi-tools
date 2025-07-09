@@ -37,10 +37,11 @@
             echo "============================================"
             echo
             echo "This shell provides tools for scanning and processing books."
-            echo "1. You can run 'scanbook' to start the scanning process."
-            echo "2. After scanning, you can use 'scantailor' for post-processing."
-            echo "3. Use 'img2pdf' to convert images to PDF format."
-            echo "4. Enjoy your digitized books!"
+            echo
+            echo "  1. You can run 'scanbook' to start the scanning process."
+            echo "  2. After scanning, you can use 'scantailor' for post-processing."
+            echo "  3. Use 'img2pdf' to convert images to PDF format."
+            echo "  4. Enjoy your digitized books!"
             echo
           '';
         };
