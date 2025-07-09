@@ -81,7 +81,7 @@ def main():
         
     except IndexError:
         print("Error: Please provide a file path as argument")
-        print("Usage: python ocr.py <path-to-file.pdf>")
+        print("Usage: mistralocr <path-to-file.pdf>")
     except Exception as e:
         print(f"Error processing file: {str(e)}")
 

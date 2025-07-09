@@ -45,6 +45,7 @@
           packages = [
             self'.packages.scanbook
             self'.packages.ai-add-bookmarks
+            self'.packages.mistralocr
 
             pkgs.scantailor-advanced
             pkgs.img2pdf
@@ -65,7 +66,9 @@
             echo "  3. Use 'img2pdf' to convert images to PDF format."
             echo "  4. Use 'ocrmypdf' to add OCR text to your PDFs."
             echo "  5. Use 'pdfcpu' for PDF manipulation tasks."
-            echo "  6. Enjoy your digitized books!"
+            echo "  6. Use 'ai-add-bookmarks' to add AI-generated bookmarks to your PDFs."
+            echo "  7. Use 'mistralocr' for converting pdf's to markdown with formula support and image extraction."
+            echo "  n. Enjoy your digitized books!"
             echo
           '';
         };
