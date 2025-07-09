@@ -1,5 +1,5 @@
 {
-  description = "Description for the project";
+  description = "A flake for book digitization tools";
 
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
@@ -17,19 +17,22 @@
       ];
       systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       perSystem = { config, self', inputs', pkgs, system, ... }: {
-        # Per-system attributes can be defined here. The self' and inputs'
-        # module parameters provide easy access to attributes of the same
-        # system.
 
-        # Equivalent to  inputs'.nixpkgs.legacyPackages.hello;
+        packages.ai-add-bookmarks = pkgs.callPackage ./scripts/ai-add-bookmarks {};
         packages.scanbook = pkgs.callPackage ./scripts/scanbook {};
         packages.default = self'.packages.scanbook;
 
         devShells.default = pkgs.mkShell {
           packages = [
             self'.packages.scanbook
+            self'.packages.ai-add-bookmarks
+
             pkgs.scantailor-advanced
             pkgs.img2pdf
+            pkgs.ocrmypdf
+            pkgs.tesseract5
+            pkgs.pdfcpu
+            pkgs.poppler-utils
           ];
           shellHook = ''
             echo
@@ -41,7 +44,9 @@
             echo "  1. You can run 'scanbook' to start the scanning process."
             echo "  2. After scanning, you can use 'scantailor' for post-processing."
             echo "  3. Use 'img2pdf' to convert images to PDF format."
-            echo "  4. Enjoy your digitized books!"
+            echo "  4. Use 'ocrmypdf' to add OCR text to your PDFs."
+            echo "  5. Use 'pdfcpu' for PDF manipulation tasks."
+            echo "  6. Enjoy your digitized books!"
             echo
           '';
         };
