@@ -197,3 +197,4 @@ tags
 ### direnv ###
 .direnv
 .envrc
+.env.local
