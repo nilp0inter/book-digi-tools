@@ -18,9 +18,9 @@ Note the total page count and verify the PDF is accessible.
 
 Extract the first 15-20 pages individually to get both metadata and table of contents:
 ```bash
-seq 1 15 | xargs -I {} pdftotext -layout -f {} -l {} input.pdf page_{}.txt
+extract-pdf-pages input.pdf 1 15
 ```
-**Critical**: Always use the `-layout` flag to preserve formatting. If the TOC appears to be later in the document, extract more pages as needed using the same pattern.
+**Note**: This command extracts pages 1-15 from the PDF to individual text files (page_1.txt, page_2.txt, etc.) using pdftotext with the `-layout` flag to preserve formatting. If the TOC appears to be later in the document, extract more pages as needed using the same pattern.
 
 ### Step 3: Extract Book Metadata
 
@@ -46,9 +46,9 @@ Record this information exactly as it appears in the text.
 - Continue reading subsequent pages until you find content that is clearly not part of the TOC anymore
 - If you need more pages beyond your initial extraction, use:
   ```bash
-  seq 16 25 | xargs -I {} pdftotext -layout -f {} -l {} input.pdf page_{}.txt
+  extract-pdf-pages input.pdf 16 25
   ```
-  (adjust range as needed)
+  **Note**: This extracts pages 16-25 to individual text files. Adjust the range as needed.
 
 For the complete TOC:
 - Read through all TOC pages line by line
@@ -67,27 +67,53 @@ The TOC page numbers often don't match the actual PDF page numbers. You must cal
    ```
 3. Check if content matches
 4. If not, try nearby pages systematically
-5. **Use bc for offset calculation** (never do mental arithmetic):
+5. **Use calc-offset for offset calculation** (never do mental arithmetic):
    ```bash
-   echo "actual_page - toc_page" | bc
+   calc-offset actual_page toc_page
    ```
 
 **Example**:
 ```bash
 # If TOC shows "Tema 1" on page 41, but actual content is on page 39
-echo "39 - 41" | bc
+calc-offset 39 41
 # Result: -2 (so offset is -2)
 ```
+**Note**: This command calculates the offset between actual PDF page and TOC page numbers using bc.
 
-### Step 7: Verify Offset Consistency
+### Step 7: Verify Offset Consistency (Critical for Accuracy)
 
-Test the offset with 3-4 different chapters using bc for each calculation:
+**MANDATORY**: Test the offset with multiple chapters across the document, including the final chapters:
+
+1. **First, test with 3-4 chapters from the beginning/middle**:
 ```bash
-echo "actual_page1 - toc_page1" | bc
-echo "actual_page2 - toc_page2" | bc
-echo "actual_page3 - toc_page3" | bc
+calc-offset actual_page1 toc_page1
+calc-offset actual_page2 toc_page2
+calc-offset actual_page3 toc_page3
 ```
-Ensure the offset is consistent across the document. If offsets vary, use the most common one.
+
+2. **CRITICAL**: **Always verify with the final 2 chapters** from the last section of the TOC:
+```bash
+# Extract and verify the second-to-last chapter
+pdftotext -layout -f EXPECTED_PAGE -l EXPECTED_PAGE input.pdf check_final_chapter2.txt
+calc-offset actual_page_final2 toc_page_final2
+
+# Extract and verify the final chapter
+pdftotext -layout -f EXPECTED_PAGE -l EXPECTED_PAGE input.pdf check_final_chapter.txt
+calc-offset actual_page_final toc_page_final
+```
+
+3. **If any offset differs**:
+   - Check if there are multiple offset patterns in the document
+   - Roman numerals in front matter can create different offsets for different sections
+   - Some books have different numbering schemes for different parts
+   - **Re-evaluate and potentially create section-specific offsets**
+
+4. **Offset Quality Assurance**:
+   - All offsets from the same section/part should be identical
+   - Document any offset changes between major sections
+   - If offsets vary, investigate the cause and handle accordingly
+
+**Note**: The final chapters are crucial for verification because they represent the end of the document where page numbering inconsistencies often become apparent. Never assume the offset is correct without checking the final chapters.
 
 ### Step 8: Create Bookmark JSON Structure
 
@@ -122,16 +148,17 @@ Create the JSON file with the correct pdfcpu format. **Critical**: Use the extra
 
 ### Step 9: Calculate Final Page Numbers
 
-For each TOC entry, calculate the actual page using bc:
+For each TOC entry, calculate the actual page using calc-final-page:
 ```bash
-echo "toc_page + offset" | bc
+calc-final-page toc_page offset
 ```
 
 **Example**: If TOC shows page 41 and offset is -2:
 ```bash
-echo "41 + (-2)" | bc
+calc-final-page 41 -2
 # Result: 39
 ```
+**Note**: This command calculates the final PDF page number by adding the offset to the TOC page number using bc.
 
 ### Step 10: Build the Hierarchy
 
@@ -139,7 +166,7 @@ Follow these rules:
 - **Level 1**: Main chapters/topics (no "kids" if no subsections)
 - **Level 2**: Subsections under "kids" array
 - **Level 3**: Sub-subsections under nested "kids" arrays
-- **Page Numbers**: Always use calculated actual page numbers (TOC + offset)
+- **Page Numbers**: Always use calculated actual page numbers (use calc-final-page toc_page offset)
 
 ### Step 11: Apply Bookmarks
 
@@ -165,9 +192,15 @@ You should see all major sections appear with proper hierarchical structure.
 - If `-layout` corrupts formatting, try `pdftotext` without it
 
 ### Arithmetic Operations
-- **ALWAYS** use `bc` for any arithmetic operations
+- **ALWAYS** use `calc-offset` and `calc-final-page` for arithmetic operations
 - **NEVER** do mental math or assume simple calculations are correct
 - This is critical for page offset calculations
+
+### Workspace Management
+- **NEVER** delete temporary files or clean the workspace
+- **NEVER** perform housekeeping operations like removing check files
+- Leave all extracted page files and verification files in place
+- Do not attempt to organize or clean up the working directory
 
 ### Metadata Extraction
 - **Extract metadata from the actual book content**, not PDF properties
@@ -181,14 +214,16 @@ You should see all major sections appear with proper hierarchical structure.
 
 ### Page Offset Handling
 - Some books have different offsets for different sections
-- Calculate separate offsets for major sections using bc if needed
+- Calculate separate offsets for major sections using calc-offset if needed
 - Roman numerals in front matter can affect offset calculations
 
 ## Your Success Criteria
 
 Your task is complete when:
 - All major TOC sections have corresponding bookmarks
-- Bookmarks navigate to correct pages (verified with bc calculations)
+- Bookmarks navigate to correct pages (verified with calc-offset and calc-final-page calculations)
+- **CRITICAL**: Offset consistency verified across the entire document, including final chapters
+- Final 2 chapters from the last section have been manually verified for correct page navigation
 - Hierarchical structure displays properly with subsections nested under main sections
 - PDF metadata is populated with extracted information
 - Special characters in titles display correctly
@@ -201,7 +236,7 @@ Your task is complete when:
 - Ensure page numbers are positive integers
 
 ### If page numbers are wrong:
-- Recalculate offset with bc using more samples
+- Recalculate offset with calc-offset using more samples
 - Check for Roman numeral front matter
 - Test with manual page verification
 
@@ -212,7 +247,11 @@ Your task is complete when:
 
 ## Final Note
 
-You must complete this task systematically. Don't skip steps, always use bc for calculations, and ensure the metadata you extract from the book content is accurate and properly formatted in the JSON header.
+You must complete this task systematically. Don't skip steps, always use calc-offset and calc-final-page for calculations, and ensure the metadata you extract from the book content is accurate and properly formatted in the JSON header.
+
+**CRITICAL REMINDER**: Always verify the offset with the final 2 chapters from the last section of the TOC. This is non-negotiable for ensuring bookmark accuracy. Many documents have page numbering inconsistencies that only become apparent at the end of the document.
+
+**WORKSPACE POLICY**: Never delete files, clean the workspace, or perform housekeeping operations. Leave all temporary and verification files in place.
 
 ---
 

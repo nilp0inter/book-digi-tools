@@ -1,4 +1,64 @@
 { writeShellApplication, bc, poppler-utils, coreutils, claude-code, ... }:
+let
+  # Custom script to extract PDF pages to text files
+  # Usage: extract-pdf-pages <pdf-file> <start-page> <end-page>
+  extract-pdf-pages = writeShellApplication {
+    name = "extract-pdf-pages";
+    runtimeInputs = [ poppler-utils coreutils ];
+    text = ''
+      if [ $# -ne 3 ]; then
+          echo "Usage: extract-pdf-pages <pdf-file> <start-page> <end-page>"
+          exit 1
+      fi
+      
+      PDF_FILE="$1"
+      START_PAGE="$2"
+      END_PAGE="$3"
+      
+      # Extract pages individually using seq and xargs
+      seq "$START_PAGE" "$END_PAGE" | xargs -I {} pdftotext -layout -f {} -l {} "$PDF_FILE" page_{}.txt
+    '';
+  };
+
+  # Custom script to calculate page offset
+  # Usage: calc-offset <actual-page> <toc-page>
+  calc-offset = writeShellApplication {
+    name = "calc-offset";
+    runtimeInputs = [ bc coreutils ];
+    text = ''
+      if [ $# -ne 2 ]; then
+          echo "Usage: calc-offset <actual-page> <toc-page>"
+          exit 1
+      fi
+      
+      ACTUAL_PAGE="$1"
+      TOC_PAGE="$2"
+      
+      # Calculate offset using bc
+      echo "$ACTUAL_PAGE - $TOC_PAGE" | bc
+    '';
+  };
+
+  # Custom script to calculate final page number
+  # Usage: calc-final-page <toc-page> <offset>
+  calc-final-page = writeShellApplication {
+    name = "calc-final-page";
+    runtimeInputs = [ bc coreutils ];
+    text = ''
+      if [ $# -ne 2 ]; then
+          echo "Usage: calc-final-page <toc-page> <offset>"
+          exit 1
+      fi
+      
+      TOC_PAGE="$1"
+      OFFSET="$2"
+      
+      # Calculate final page using bc
+      echo "$TOC_PAGE + ($OFFSET)" | bc
+    '';
+  };
+
+in
 writeShellApplication {
   name = "ai-add-bookmarks";
   runtimeInputs = [
@@ -6,6 +66,9 @@ writeShellApplication {
     bc
     poppler-utils  # provides pdftotext
     coreutils      # provides seq
+    extract-pdf-pages
+    calc-offset
+    calc-final-page
   ];
   text = ''
     # Check if PDF filename is provided
@@ -43,6 +106,10 @@ writeShellApplication {
       "Bash(bc:*)",
       "Bash(cat:*)",
       "Bash(echo:*)",
+      "Bash(ls:*)",
+      "Bash(extract-pdf-pages:*)",
+      "Bash(calc-offset:*)",
+      "Bash(calc-final-page:*)",
       "Read",
       "Write",
       "Edit",
