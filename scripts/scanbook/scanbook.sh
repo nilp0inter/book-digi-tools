@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 # Default scanner config
-DEVICE="brother5:net1;dev0"
-OUTPUT_PREFIX="page_"
-OUTPUT_EXT="tiff"
-RESOLUTION=300
-MODE="True Gray"
-SOURCE="Automatic Document Feeder(center aligned,Duplex)"
-FORMAT="tiff"
+DEVICE=${DEVICE:-"brother5:net1;dev0"}
+OUTPUT_PREFIX=${OUTPUT_PREFIX:-"page_"}
+OUTPUT_EXT=${OUTPUT_EXT:-"tiff"}
+RESOLUTION=${RESOLUTION:-300}
+MODE=${MODE:-"True Gray"}
+SOURCE=${SOURCE:-"Automatic Document Feeder(center aligned,Duplex)"}
+FORMAT=${FORMAT:-"tiff"}
 
 # Optional input: width and height in mm
 DOC_WIDTH_MM="${1}"    # e.g. 160
