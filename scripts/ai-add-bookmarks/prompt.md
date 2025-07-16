@@ -102,6 +102,35 @@ pdftotext -layout -f EXPECTED_PAGE -l EXPECTED_PAGE input.pdf check_final_chapte
 calc-offset actual_page_final toc_page_final
 ```
 
+### Step 7a: Validate Chapter Locations (MANDATORY)
+
+**CRITICAL**: For every chapter you test during offset verification, you **MUST** use the `validate-chapter-location` tool to confirm that the chapter actually begins where you think it does:
+
+```bash
+# For each chapter being verified, extract the previous page and validate
+pdftotext -layout -f PREVIOUS_PAGE -l PREVIOUS_PAGE input.pdf check_previous_page.txt
+validate-chapter-location "Chapter Title" check_previous_page.txt check_chapter_page.txt
+```
+
+**Usage**: `validate-chapter-location <chapter-name> <previous-page-file> <guessed-page-file>`
+
+**Requirements**:
+- The `<chapter-name>` should be the exact title from the TOC (in quotes)
+- The `<previous-page-file>` should contain the page immediately before the expected chapter start
+- The `<guessed-page-file>` should contain the page where you think the chapter begins
+- The tool returns the filename and exits with 0 if validation succeeds
+- The tool prints "**Not found**" and exits with 1 if validation fails
+
+**Example**:
+```bash
+# If testing chapter "Tema 1" expected on page 39
+pdftotext -layout -f 38 -l 38 input.pdf check_page_38.txt
+pdftotext -layout -f 39 -l 39 input.pdf check_page_39.txt
+validate-chapter-location "Tema 1" check_page_38.txt check_page_39.txt
+```
+
+**You MUST validate at least 3-4 chapters this way before proceeding with bookmark creation.**
+
 3. **If any offset differs**:
    - Check if there are multiple offset patterns in the document
    - Roman numerals in front matter can create different offsets for different sections
@@ -160,6 +189,16 @@ calc-final-page 41 -2
 ```
 **Note**: This command calculates the final PDF page number by adding the offset to the TOC page number using bc.
 
+### Step 9a: Validate All Chapter Locations (MANDATORY)
+
+Before building the bookmark hierarchy, you **MUST** validate the location of every major chapter using the `validate-chapter-location` tool:
+
+```bash
+validate-chapter-location "Chapter Title" previous_page_file.txt chapter_page_file.txt
+```
+
+**Note**: This command validates that a chapter actually begins where expected by checking that the previous page doesn't contain the chapter title and the guessed page does contain it. Use this for every chapter before creating bookmarks.
+
 ### Step 10: Build the Hierarchy
 
 Follow these rules:
@@ -167,6 +206,7 @@ Follow these rules:
 - **Level 2**: Subsections under "kids" array
 - **Level 3**: Sub-subsections under nested "kids" arrays
 - **Page Numbers**: Always use calculated actual page numbers (use calc-final-page toc_page offset)
+- **MANDATORY**: Only include chapters that have been validated with `validate-chapter-location`
 
 ### Step 11: Apply Bookmarks
 
@@ -196,6 +236,12 @@ You should see all major sections appear with proper hierarchical structure.
 - **NEVER** do mental math or assume simple calculations are correct
 - This is critical for page offset calculations
 
+### Chapter Validation
+- **ALWAYS** use `validate-chapter-location` to verify chapter locations
+- **NEVER** assume a chapter starts where the TOC says without validation
+- **MANDATORY**: Validate at least 3-4 chapters before creating bookmarks
+- Only include validated chapters in the final bookmark structure
+
 ### Workspace Management
 - **NEVER** delete temporary files or clean the workspace
 - **NEVER** perform housekeeping operations like removing check files
@@ -224,6 +270,8 @@ Your task is complete when:
 - Bookmarks navigate to correct pages (verified with calc-offset and calc-final-page calculations)
 - **CRITICAL**: Offset consistency verified across the entire document, including final chapters
 - Final 2 chapters from the last section have been manually verified for correct page navigation
+- **MANDATORY**: All major chapters have been validated with `validate-chapter-location`
+- Only validated chapters are included in the final bookmark structure
 - Hierarchical structure displays properly with subsections nested under main sections
 - PDF metadata is populated with extracted information
 - Special characters in titles display correctly

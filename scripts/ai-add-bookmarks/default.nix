@@ -1,4 +1,4 @@
-{ writeShellApplication, bc, poppler-utils, coreutils, claude-code, ... }:
+{ writeShellApplication, bc, poppler-utils, coreutils, claude-code, ripgrep, ... }:
 let
   # Custom script to extract PDF pages to text files
   # Usage: extract-pdf-pages <pdf-file> <start-page> <end-page>
@@ -58,6 +58,49 @@ let
     '';
   };
 
+  # Custom script to validate chapter location
+  # Usage: validate-chapter-location <chapter-name> <previous-page-file> <guessed-page-file>
+  validate-chapter-location = writeShellApplication {
+    name = "validate-chapter-location";
+    runtimeInputs = [ ripgrep coreutils ];
+    text = ''
+      if [ $# -ne 3 ]; then
+          echo "Usage: validate-chapter-location <chapter-name> <previous-page-file> <guessed-page-file>"
+          exit 1
+      fi
+      
+      CHAPTER_NAME="$1"
+      PREVIOUS_PAGE_FILE="$2"
+      GUESSED_PAGE_FILE="$3"
+      
+      # Check if both files exist
+      if [ ! -f "$PREVIOUS_PAGE_FILE" ]; then
+          echo "**Not found**"
+          exit 1
+      fi
+      
+      if [ ! -f "$GUESSED_PAGE_FILE" ]; then
+          echo "**Not found**"
+          exit 1
+      fi
+      
+      # Check that previous page DOESN'T match the chapter name
+      if rg -q "$CHAPTER_NAME" "$PREVIOUS_PAGE_FILE"; then
+          echo "**Not found**"
+          exit 1
+      fi
+      
+      # Check that guessed page DOES match the chapter name
+      if rg -q "$CHAPTER_NAME" "$GUESSED_PAGE_FILE"; then
+          echo "$GUESSED_PAGE_FILE"
+          exit 0
+      else
+          echo "**Not found**"
+          exit 1
+      fi
+    '';
+  };
+
 in
 writeShellApplication {
   name = "ai-add-bookmarks";
@@ -66,9 +109,11 @@ writeShellApplication {
     bc
     poppler-utils  # provides pdftotext
     coreutils      # provides seq
+    ripgrep        # provides rg
     extract-pdf-pages
     calc-offset
     calc-final-page
+    validate-chapter-location
   ];
   text = ''
     # Check if PDF filename is provided
@@ -110,6 +155,8 @@ writeShellApplication {
       "Bash(extract-pdf-pages:*)",
       "Bash(calc-offset:*)",
       "Bash(calc-final-page:*)",
+      "Bash(validate-chapter-location:*)",
+      "Bash(rg:*)",
       "Read",
       "Write",
       "Edit",
